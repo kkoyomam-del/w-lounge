@@ -1,5 +1,5 @@
 /* W라운지 오프라인 캐시 (선택사항) — network-first */
-const CACHE = 'wlounge-v2-archive-20260613';
+const CACHE = 'wlounge-v2-inline-20260613';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch', e => {
