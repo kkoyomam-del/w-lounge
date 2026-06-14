@@ -1,16 +1,62 @@
-/* W라운지 오프라인 캐시 (선택사항) — network-first */
-const CACHE = 'wlounge-v1';
-self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(ch => ch.put(e.request, copy)).catch(()=>{});
-        return res;
+const CACHE = "wlounge-v20260614-emoji-scroll";
+
+self.addEventListener("install", function (event) {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", function (event) {
+  event.waitUntil(
+    caches
+      .keys()
+      .then(function (keys) {
+        return Promise.all(
+          keys
+            .filter(function (key) {
+              return key !== CACHE;
+            })
+            .map(function (key) {
+              return caches.delete(key);
+            })
+        );
       })
-      .catch(() => caches.match(e.request).then(m => m || caches.match('./')))
+      .then(function () {
+        return self.clients.claim();
+      })
+  );
+});
+
+self.addEventListener("fetch", function (event) {
+  if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+  const isPageRequest =
+    event.request.mode === "navigate" ||
+    url.pathname.endsWith("/") ||
+    url.pathname.endsWith("/index.html");
+
+  if (isPageRequest) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(function () {
+        return caches.match("./index.html").then(function (match) {
+          return match || caches.match("./");
+        });
+      })
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.open(CACHE).then(function (cache) {
+      return fetch(event.request)
+        .then(function (response) {
+          if (response && response.ok) {
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        })
+        .catch(function () {
+          return cache.match(event.request);
+        });
+    })
   );
 });
