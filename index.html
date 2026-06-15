@@ -2792,24 +2792,6 @@ function wrapForumCanvasText(ctx,text,maxWidth){
   });
   return lines;
 }
-function forumTextForCanvas(el){
-  if(!el)return '';
-  var clone=el.cloneNode(true);
-  clone.querySelectorAll('br').forEach(function(br){
-    br.replaceWith(document.createTextNode('\n'));
-  });
-  clone.querySelectorAll('p,li').forEach(function(block){
-    block.appendChild(document.createTextNode('\n'));
-  });
-  return (clone.textContent||'')
-    .replace(/\u200b/g,'')
-    .replace(/\r/g,'')
-    .replace(/[ \t]+\n/g,'\n')
-    .replace(/\n[ \t]+/g,'\n')
-    .replace(/\n{3,}/g,'\n\n')
-    .trim();
-}
-
 function makeForumQuestionCanvas(fe){
   var titleEl=fe.querySelector('.fet');
   var metaEl=fe.querySelector('.fed');
@@ -2817,7 +2799,7 @@ function makeForumQuestionCanvas(fe){
   var qTextEl=qSection?qSection.querySelector('.ftxt,.fq'):null;
   var title=(titleEl?titleEl.textContent:'금요포럼 질문').replace(/\s+/g,' ').trim()||'금요포럼 질문';
   var meta=(metaEl?metaEl.textContent:'').replace(/\s+/g,' ').trim();
-  var question=forumTextForCanvas(qTextEl||qSection);
+  var question=(qTextEl?qTextEl.textContent:qSection.textContent).replace(/\u200b/g,'').trim();
   var canvas=document.createElement('canvas');
   var ctx=canvas.getContext('2d');
   var width=1080, pad=76, maxTextWidth=width-pad*2, maxHeight=3900;
