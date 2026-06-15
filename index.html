@@ -2753,48 +2753,125 @@ function rh(fid) {
   out.scrollTop = out.scrollHeight;
 }
 // ── FORUM SHARE (질문 카드 공유) ─────────────────────────────────────────
-function shareForumQ(btn) {
+function wrapForumCanvasText(ctx,text,maxWidth){
+  var lines=[];
+  String(text||'').replace(/\r/g,'').split('\n').forEach(function(paragraph){
+    paragraph=paragraph.replace(/\s+$/,'');
+    if(!paragraph.trim()){lines.push('');return;}
+    var parts=paragraph.split(/(\s+)/).filter(function(part){return part!=='';});
+    var current='';
+    parts.forEach(function(part){
+      var test=current+part;
+      if(ctx.measureText(test).width<=maxWidth){current=test;return;}
+      if(current.trim()){lines.push(current.trimEnd());current='';}
+      if(ctx.measureText(part).width<=maxWidth){current=part.trimStart();return;}
+      var chunk='';
+      Array.from(part).forEach(function(ch){
+        var testChunk=chunk+ch;
+        if(ctx.measureText(testChunk).width>maxWidth&&chunk){
+          lines.push(chunk);
+          chunk=ch;
+        }else{
+          chunk=testChunk;
+        }
+      });
+      current=chunk;
+    });
+    if(current.trim())lines.push(current.trimEnd());
+  });
+  return lines;
+}
+function makeForumQuestionCanvas(fe){
+  var titleEl=fe.querySelector('.fet');
+  var metaEl=fe.querySelector('.fed');
+  var qSection=fe.querySelector('.fs');
+  var qTextEl=qSection?qSection.querySelector('.ftxt,.fq'):null;
+  var title=(titleEl?titleEl.textContent:'금요포럼 질문').replace(/\s+/g,' ').trim()||'금요포럼 질문';
+  var meta=(metaEl?metaEl.textContent:'').replace(/\s+/g,' ').trim();
+  var question=(qTextEl?qTextEl.textContent:qSection.textContent).replace(/\u200b/g,'').trim();
+  var canvas=document.createElement('canvas');
+  var ctx=canvas.getContext('2d');
+  var width=1080, pad=76, maxTextWidth=width-pad*2, maxHeight=3900;
+  canvas.width=width;
+  ctx.font="700 48px 'Noto Serif KR', serif";
+  var titleLines=wrapForumCanvasText(ctx,title,maxTextWidth).slice(0,2);
+  ctx.font="400 36px 'Noto Sans KR', sans-serif";
+  var questionLines=wrapForumCanvasText(ctx,question,maxTextWidth);
+  var headerHeight=150+(titleLines.length*62)+(meta?42:0);
+  var footerHeight=112, lineHeight=58;
+  var maxLines=Math.max(8,Math.floor((maxHeight-headerHeight-footerHeight)/lineHeight));
+  if(questionLines.length>maxLines){
+    questionLines=questionLines.slice(0,maxLines-2);
+    questionLines.push('…');
+    questionLines.push('앱에서 전체 질문을 이어서 확인해주세요.');
+  }
+  var height=Math.min(maxHeight,headerHeight+questionLines.length*lineHeight+footerHeight);
+  canvas.height=height;
+  ctx.fillStyle='#faf7f0';
+  ctx.fillRect(0,0,width,height);
+  ctx.strokeStyle='#d8c8ad';
+  ctx.lineWidth=2;
+  ctx.strokeRect(26,26,width-52,height-52);
+  ctx.fillStyle='#b8935a';
+  ctx.font="800 26px 'Noto Sans KR', sans-serif";
+  ctx.fillText('故 이재훈 고문님 금요포럼',pad,64);
+  ctx.fillStyle='#1a2535';
+  ctx.font="700 48px 'Noto Serif KR', serif";
+  var y=112;
+  titleLines.forEach(function(line){ctx.fillText(line,pad,y);y+=62;});
+  if(meta){
+    ctx.fillStyle='#7d7468';
+    ctx.font="400 28px 'Noto Sans KR', sans-serif";
+    ctx.fillText(meta,pad,y+2);
+    y+=50;
+  }else{
+    y+=10;
+  }
+  ctx.strokeStyle='rgba(184,147,90,.45)';
+  ctx.beginPath();
+  ctx.moveTo(pad,y);
+  ctx.lineTo(width-pad,y);
+  ctx.stroke();
+  y+=44;
+  ctx.fillStyle='#1f2937';
+  ctx.font="400 36px 'Noto Sans KR', sans-serif";
+  questionLines.forEach(function(line){
+    if(!line){y+=Math.round(lineHeight*.55);return;}
+    ctx.fillText(line,pad,y);
+    y+=lineHeight;
+  });
+  ctx.fillStyle='#b8935a';
+  ctx.font="700 25px 'Noto Sans KR', sans-serif";
+  ctx.fillText('W라운지',pad,height-74);
+  return {canvas:canvas,title:title};
+}
+function canvasToForumBlob(canvas){
+  return new Promise(function(resolve,reject){
+    if(canvas.toBlob){
+      canvas.toBlob(function(blob){blob?resolve(blob):reject(new Error('blob failed'));},'image/png',.92);
+    }else{
+      var data=canvas.toDataURL('image/png').split(',')[1];
+      var bin=atob(data), len=bin.length, arr=new Uint8Array(len);
+      for(var i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
+      resolve(new Blob([arr],{type:'image/png'}));
+    }
+  });
+}
+async function shareForumQ(btn) {
   var fe = btn.closest('.fe');
   if(!fe) return;
-  var qSection = fe.querySelector('.fs');
-  if(!qSection) return;
-  var body = fe.querySelector('.feb');
-  var wasOpen = body ? body.classList.contains('o') : false;
-  var oldDisplay = body ? body.style.display : '';
-  // 공유 버튼 숨김
-  var shareBtns = fe.querySelectorAll('.fe-share-btn');
-  shareBtns.forEach(function(b){b.style.display='none';});
-  if(body){
-    body.classList.add('o');
-    body.style.display='block';
-  }
-  function restoreForumShareState(){
-    shareBtns.forEach(function(b){b.style.display='';});
-    if(body){
-      body.style.display=oldDisplay;
-      if(!wasOpen)body.classList.remove('o');
+  try{
+    var data=makeForumQuestionCanvas(fe);
+    var blob=await canvasToForumBlob(data.canvas);
+    var file=new File([blob],'wlounge_forum_question.png',{type:'image/png'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({title:'故 이재훈 고문님 금요포럼',text:data.title,files:[file]});
+    }else{
+      dlForumImg(data.canvas);
     }
+  }catch(e){
+    toast('질문 이미지를 만들지 못했습니다. 다시 시도해주세요.');
   }
-  setTimeout(function(){
-    if(typeof html2canvas !== 'undefined') {
-      html2canvas(qSection, {scale:2, backgroundColor:'#faf7f0', logging:false, useCORS:true})
-      .then(function(canvas){
-        restoreForumShareState();
-        canvas.toBlob(function(blob){
-          var file = new File([blob],'고문님_금요포럼.png',{type:'image/png'});
-          if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-            navigator.share({title:'故 이재훈 고문님 금요포럼',files:[file]}).catch(function(){dlForumImg(canvas);});
-          } else { dlForumImg(canvas); }
-        });
-      }).catch(function(){
-        restoreForumShareState();
-        toast('공유 실패. 다시 시도해주세요.');
-      });
-    } else {
-      restoreForumShareState();
-      toast('공유 기능을 불러오는 중입니다...');
-    }
-  }, 100);
 }
 function dlForumImg(canvas) {
   var a = document.createElement('a');
