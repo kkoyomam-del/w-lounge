@@ -1,4 +1,4 @@
-const CACHE = "wlounge-v20260614-emoji-scroll";
+﻿const CACHE = "wlounge-20260615174347";
 
 self.addEventListener("install", function (event) {
   self.skipWaiting();
