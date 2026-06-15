@@ -454,6 +454,15 @@ body.menu-open{overflow:hidden}
   html,body{overflow-y:auto}
   body{overscroll-behavior-y:auto}
   .page{-webkit-overflow-scrolling:touch;touch-action:pan-y;padding-bottom:calc(env(safe-area-inset-bottom) + 1.25rem)}
+  #page-quotes,.ql,.qm,#cview,.cc,.cards,.qc{min-width:0;max-width:100%;box-sizing:border-box}
+  #page-quotes{overflow-x:hidden}
+  .ql{width:100%;overflow-x:hidden}
+  .qm{width:100%;padding:1.15rem .95rem}
+  .cc{width:100%;overflow:hidden}
+  .cards{width:100%;align-items:stretch}
+  .qc{width:100%;padding:1.45rem 1.05rem 1.22rem;overflow:hidden}
+  .qc-q,.qc-e{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+  .qc-a{flex-wrap:wrap}
   #wlSheet:not(.show){pointer-events:none}
   #wlSheet.show{pointer-events:auto}
 }
@@ -506,7 +515,7 @@ body.menu-open{overflow:hidden}
       <button onclick="go('col')">칼럼</button>
       <button onclick="go('books')">추천</button>
     </div>
-    <div class="entry-credit">© 2026. 故 이재훈 고문 · 엮음 수련샘</div></div>
+    <div class="entry-credit">© 2026. 이재훈 말씀 · 수련샘 제작</div></div>
 </div>
 <div class="app" id="app">
 <nav class="nav">
@@ -632,7 +641,7 @@ body.menu-open{overflow:hidden}
     <div class="mem-note">사진은 가능한 한 원본 화질로, 말씀은 언제·어떤 자리에서 나누신 것인지 함께 적어 주시면 더욱 귀하게 간직하겠습니다.</div>
   </div>
 </div>
-<div class="home-credit">© 2026. 故 이재훈 고문 · 엮음 수련샘</div>
+<div class="home-credit">© 2026. 이재훈 말씀 · 수련샘 제작</div>
 </div>
 
 <!-- CHAT -->
