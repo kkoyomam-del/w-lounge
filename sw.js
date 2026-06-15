@@ -1,4 +1,4 @@
-const CACHE = "wlounge-20260616160000";
+﻿const CACHE = "wlounge-20260615225500";
 
 self.addEventListener("install", function (event) {
   self.skipWaiting();
